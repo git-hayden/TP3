@@ -90,7 +90,7 @@ public class DiscussionBoardDAO {
     "weight DOUBLE DEFAULT 1.0," +
     "createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
     "updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
-    "UNIQUE KEY unique_reviewer (studentUserName, reviewerUserName))";
+    "CONSTRAINT unique_reviewer UNIQUE (studentUserName, reviewerUserName))";
 
     statement.execute(reviewerWeightsTable);
     }
@@ -193,11 +193,38 @@ public class DiscussionBoardDAO {
         public Answers getAnswersForQuestion(int questionId) throws SQLException {
             Answers answers = new Answers();
             String sql = "SELECT * FROM answers WHERE questionId = ? ORDER BY isAccepted DESC, createdAt ASC";
-            
+
             try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
                 pstmt.setInt(1, questionId);
                 ResultSet rs = pstmt.executeQuery();
-                
+
+                while (rs.next()) {
+                    Answer a = extractAnswerFromResultSet(rs);
+                    answers.addAnswer(a);
+                }
+            }
+            return answers;
+        }
+
+        //get answers sorted by reviewer weight
+        public Answers getWeightedAnswersForQuestion(int questionId, String studentUserName) throws SQLException {
+            Answers answers = new Answers();
+
+            //join answers with reviewer weights to calculate weighted scores
+            String sql = "SELECT a.*, COALESCE(rw.weight, 1.0) as reviewerWeight " +
+                        "FROM answers a " +
+                        "LEFT JOIN reviewer_weights rw ON a.authorUserName = rw.reviewerUserName " +
+                        "AND rw.studentUserName = ? " +
+                        "WHERE a.questionId = ? " +
+                        "ORDER BY (1.0 + CASE WHEN a.isAccepted THEN 100 ELSE 0 END + " +
+                        "CASE WHEN a.isCorrect THEN 50 ELSE 0 END) * COALESCE(rw.weight, 1.0) DESC, " +
+                        "a.createdAt ASC";
+
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                pstmt.setString(1, studentUserName);
+                pstmt.setInt(2, questionId);
+                ResultSet rs = pstmt.executeQuery();
+
                 while (rs.next()) {
                     Answer a = extractAnswerFromResultSet(rs);
                     answers.addAnswer(a);

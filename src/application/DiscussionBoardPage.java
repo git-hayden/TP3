@@ -43,7 +43,8 @@ public class DiscussionBoardPage {
         try {
             this.dao = new DiscussionBoardDAO();
         } catch (SQLException e) {
-            showError("Failed to connect to the database");
+            e.printStackTrace();
+            System.err.println("Failed to connect to the database: " + e.getMessage());
         }
     }
 
@@ -288,6 +289,11 @@ public class DiscussionBoardPage {
         Button deleteReplyBtn = new Button("Delete Reply");
         deleteReplyBtn.setPrefWidth(180);
         deleteReplyBtn.setOnAction(e -> deleteReply());
+        //manage reviewer weights (student only)
+        Button manageWeightsBtn = new Button("Manage Reviewer Weights");
+        manageWeightsBtn.setPrefWidth(180);
+        manageWeightsBtn.setOnAction(e -> manageReviewerWeights());
+        manageWeightsBtn.setDisable("admin".equals(currentUserRole));
         //refresh button
         Button refreshBtn = new Button("Refresh");
         refreshBtn.setPrefWidth(180);
@@ -313,6 +319,8 @@ public class DiscussionBoardPage {
                 addAnswerBtn, editAnswerBtn, deleteAnswerBtn, markHelpfulBtn,
                 new Separator(),
                 addReplyBtn, editReplyBtn, deleteReplyBtn,
+                new Separator(),
+                manageWeightsBtn,
                 new Separator(),
                 refreshBtn, backBtn
             );
@@ -669,6 +677,9 @@ public class DiscussionBoardPage {
 
     //load questions
     private void loadQuestions() {
+        if (dao == null) {
+            return; //silently fail if dao not initialized
+        }
         try {
             Questions questions = dao.getAllQuestions();
             ObservableList<Question> questionList = FXCollections.observableArrayList(questions.getAllQuestions());
@@ -691,9 +702,16 @@ public class DiscussionBoardPage {
             "Content:\n" + question.getContent();
             questionDetailArea.setText(details);
 
-            //load answers
+            //load answers (use weighted sorting for students)
             try {
-                Answers answers = dao.getAnswersForQuestion(question.getQuestionId());
+                Answers answers;
+                if ("admin".equals(currentUserRole)) {
+                    System.out.println("Loading answers WITHOUT weights (admin view)");
+                    answers = dao.getAnswersForQuestion(question.getQuestionId());
+                } else {
+                    System.out.println("Loading answers WITH weights for user: " + currentUserName + " (role: " + currentUserRole + ")");
+                    answers = dao.getWeightedAnswersForQuestion(question.getQuestionId(), currentUserName);
+                }
                 ObservableList<Answer> answerList = FXCollections.observableArrayList(answers.getAllAnswers());
                 answerListView.setItems(answerList);
             } catch (SQLException e) { showError("Failed to load answers: " + e.getMessage());}
@@ -887,6 +905,106 @@ public class DiscussionBoardPage {
 
         } catch (SQLException e) {
             showError("Error updating helpful status: " + e.getMessage());
+        }
+    }
+
+    // Manage reviewer weights (student only)
+    private void manageReviewerWeights() {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Manage Reviewer Weights");
+        dialog.setHeaderText("Set trust levels for reviewers (1.0 = normal, 5.0 = highly trusted)");
+
+        VBox mainBox = new VBox(10);
+        mainBox.setPadding(new Insets(10));
+        mainBox.setPrefWidth(500);
+
+        //get all unique answer authors (potential reviewers)
+        try {
+            Answers allAnswers = dao.getAllAnswers();
+            java.util.Set<String> reviewers = new java.util.HashSet<>();
+            for (Answer a : allAnswers.getAllAnswers()) {
+                if (!a.getAuthorUserName().equals(currentUserName)) {
+                    reviewers.add(a.getAuthorUserName());
+                }
+            }
+
+            //load existing weights
+            java.util.Map<String, Double> currentWeights = new java.util.HashMap<>();
+            for (ReviewerWeight rw : dao.getAllReviewerWeights(currentUserName)) {
+                currentWeights.put(rw.getReviewerUserName(), rw.getWeight());
+            }
+
+            //create UI for each reviewer
+            Label instructionLabel = new Label("Adjust the weights for each reviewer:");
+            mainBox.getChildren().add(instructionLabel);
+
+            ScrollPane scrollPane = new ScrollPane();
+            VBox reviewerList = new VBox(10);
+            reviewerList.setPadding(new Insets(10));
+
+            java.util.Map<String, Slider> sliders = new java.util.HashMap<>();
+
+            for (String reviewer : reviewers) {
+                HBox reviewerBox = new HBox(10);
+                reviewerBox.setAlignment(Pos.CENTER_LEFT);
+
+                Label reviewerLabel = new Label(reviewer);
+                reviewerLabel.setPrefWidth(150);
+
+                Slider weightSlider = new Slider(0.1, 5.0, currentWeights.getOrDefault(reviewer, 1.0));
+                weightSlider.setShowTickLabels(true);
+                weightSlider.setShowTickMarks(true);
+                weightSlider.setMajorTickUnit(1.0);
+                weightSlider.setMinorTickCount(1);
+                weightSlider.setPrefWidth(200);
+
+                Label valueLabel = new Label(String.format("%.1f", weightSlider.getValue()));
+                valueLabel.setPrefWidth(40);
+                weightSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+                    valueLabel.setText(String.format("%.1f", newVal.doubleValue()));
+                });
+
+                Button deleteBtn = new Button("Remove");
+                deleteBtn.setOnAction(e -> {
+                    try {
+                        dao.deleteReviewerWeight(currentUserName, reviewer);
+                        weightSlider.setValue(1.0);
+                        showInfo("Weight removed for " + reviewer);
+                    } catch (SQLException ex) {
+                        showError("Failed to remove weight: " + ex.getMessage());
+                    }
+                });
+
+                reviewerBox.getChildren().addAll(reviewerLabel, weightSlider, valueLabel, deleteBtn);
+                reviewerList.getChildren().add(reviewerBox);
+                sliders.put(reviewer, weightSlider);
+            }
+
+            scrollPane.setContent(reviewerList);
+            scrollPane.setPrefHeight(300);
+            mainBox.getChildren().add(scrollPane);
+
+            dialog.getDialogPane().setContent(mainBox);
+            dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+            dialog.showAndWait().ifPresent(response -> {
+                if (response == ButtonType.OK) {
+                    try {
+                        for (java.util.Map.Entry<String, Slider> entry : sliders.entrySet()) {
+                            String reviewer = entry.getKey();
+                            double weight = entry.getValue().getValue();
+                            dao.setReviewerWeight(currentUserName, reviewer, weight);
+                        }
+                        showInfo("Reviewer weights updated successfully!");
+                        refreshData();
+                    } catch (SQLException e) {
+                        showError("Failed to update weights: " + e.getMessage());
+                    }
+                }
+            });
+
+        } catch (SQLException e) {
+            showError("Failed to load reviewers: " + e.getMessage());
         }
     }
 }
