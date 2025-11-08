@@ -10,6 +10,7 @@ import application.Questions;
 import application.Answers;
 import application.Reply;
 import application.Replies;
+import application.ReviewerWeight;
 
 //data access object for the discussion board
 public class DiscussionBoardDAO {
@@ -80,6 +81,18 @@ public class DiscussionBoardDAO {
     "FOREIGN KEY (answerId) REFERENCES answers(answerId))";
 
     statement.execute(repliesTable);
+
+    //reviewer_weights table.
+    String reviewerWeightsTable = "CREATE TABLE IF NOT EXISTS reviewer_weights(" +
+    "reviewerWeightId INT AUTO_INCREMENT PRIMARY KEY," +
+    "studentUserName VARCHAR(255) NOT NULL," +
+    "reviewerUserName VARCHAR(255) NOT NULL," +
+    "weight DOUBLE DEFAULT 1.0," +
+    "createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
+    "updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
+    "UNIQUE KEY unique_reviewer (studentUserName, reviewerUserName))";
+
+    statement.execute(reviewerWeightsTable);
     }
     //insert a question 
     public int createQuestion(Question question) throws SQLException {
@@ -354,6 +367,84 @@ public class DiscussionBoardDAO {
                 rs.getTimestamp("updatedAt").toLocalDateTime()
             );
             return r;
+        }
+
+        //REVIEWER WEIGHT CRUD OPERATIONS
+
+        //set or update reviewer weight (upsert operation)
+        public boolean setReviewerWeight(String studentUserName, String reviewerUserName, double weight) throws SQLException {
+            //try to update first
+            String updateSql = "UPDATE reviewer_weights SET weight = ?, updatedAt = ? WHERE studentUserName = ? AND reviewerUserName = ?";
+            try (PreparedStatement pstmt = connection.prepareStatement(updateSql)) {
+                pstmt.setDouble(1, weight);
+                pstmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
+                pstmt.setString(3, studentUserName);
+                pstmt.setString(4, reviewerUserName);
+
+                if (pstmt.executeUpdate() > 0) {
+                    return true; //update successful
+                }
+            }
+
+            //if no rows updated, insert new
+            String insertSql = "INSERT INTO reviewer_weights (studentUserName, reviewerUserName, weight) VALUES (?, ?, ?)";
+            try (PreparedStatement pstmt = connection.prepareStatement(insertSql)) {
+                pstmt.setString(1, studentUserName);
+                pstmt.setString(2, reviewerUserName);
+                pstmt.setDouble(3, weight);
+                return pstmt.executeUpdate() > 0;
+            }
+        }
+
+        //get reviewer weight for a specific reviewer
+        public Double getReviewerWeight(String studentUserName, String reviewerUserName) throws SQLException {
+            String sql = "SELECT weight FROM reviewer_weights WHERE studentUserName = ? AND reviewerUserName = ?";
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                pstmt.setString(1, studentUserName);
+                pstmt.setString(2, reviewerUserName);
+                ResultSet rs = pstmt.executeQuery();
+                if (rs.next()) {
+                    return rs.getDouble("weight");
+                }
+            }
+            return 1.0; //default weight if not set
+        }
+
+        //get all reviewer weights for a student
+        public List<ReviewerWeight> getAllReviewerWeights(String studentUserName) throws SQLException {
+            List<ReviewerWeight> weights = new ArrayList<>();
+            String sql = "SELECT * FROM reviewer_weights WHERE studentUserName = ? ORDER BY weight DESC";
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                pstmt.setString(1, studentUserName);
+                ResultSet rs = pstmt.executeQuery();
+                while (rs.next()) {
+                    ReviewerWeight rw = extractReviewerWeightFromResultSet(rs);
+                    weights.add(rw);
+                }
+            }
+            return weights;
+        }
+
+        //delete a reviewer weight
+        public boolean deleteReviewerWeight(String studentUserName, String reviewerUserName) throws SQLException {
+            String sql = "DELETE FROM reviewer_weights WHERE studentUserName = ? AND reviewerUserName = ?";
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                pstmt.setString(1, studentUserName);
+                pstmt.setString(2, reviewerUserName);
+                return pstmt.executeUpdate() > 0;
+            }
+        }
+
+        //extract reviewer weight from result set
+        private ReviewerWeight extractReviewerWeightFromResultSet(ResultSet rs) throws SQLException {
+            return new ReviewerWeight(
+                rs.getInt("reviewerWeightId"),
+                rs.getString("studentUserName"),
+                rs.getString("reviewerUserName"),
+                rs.getDouble("weight"),
+                rs.getTimestamp("createdAt").toLocalDateTime(),
+                rs.getTimestamp("updatedAt").toLocalDateTime()
+            );
         }
 
         //finally, close the connection
