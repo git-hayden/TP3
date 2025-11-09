@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"m":"FoundationCode","l":"application"},{"m":"FoundationCode","l":"databasePart1"}];updateSearchResults();
