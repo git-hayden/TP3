@@ -22,7 +22,7 @@ public class DiscussionBoardValidator {
         }
         return null; //if the title is valid, do not return anything
     }
-    //validate the content of the question/answer
+    //validate the content of the question/answer/reply/review
     public static String validateContent(String content) {
         if (content == null || content.trim().isEmpty()) {
             return "Content cannot be empty";
@@ -46,6 +46,17 @@ public class DiscussionBoardValidator {
         }
         return null; //if the category is valid, do not return anything
     }
+    //validate the rating of the review
+    public static String validateRating(String rating) {
+    	if (rating == null || rating.trim().isEmpty()) {
+    		return "Rating cannot be empty";
+    	}
+    	String trimmedRating = rating.trim();
+    	if (!trimmedRating.equals("1") && !trimmedRating.equals("2") && !trimmedRating.equals("3") && !trimmedRating.equals("4") && !trimmedRating.equals("5")) {
+    		return "Rating must be an integer 1-5";
+    	}
+    	return null; //if the rating is valid, do not return anything
+    }
     //validate the complete question
     public static String validateQuestion(String title, String content, String category) {
         String titleError = validateTitle(title);
@@ -61,6 +72,18 @@ public class DiscussionBoardValidator {
     public static String validateAnswer(String content) {
         return validateContent(content);
     }
+    //validate the complete reply
+    public static String validateReply(String content) {
+        return validateContent(content);
+    }
+    //validate the complete review
+    public static String validateReview(String rating, String content) {
+    	String ratingError = validateRating(rating);
+    	if(ratingError != null) return ratingError;
+    	String contentError = validateContent(content);
+        if(contentError != null) return contentError;
+        return null; //if the review is valid, do not return anything
+    }
 
     //validate search query
     public static String validateSearchQuery(String keyword) {
@@ -73,5 +96,3 @@ public class DiscussionBoardValidator {
         return null; //if the keyword is valid, do not return anything
     }
 }
-
-
