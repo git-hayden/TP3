@@ -5,7 +5,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.UUID;
-
+import java.util.List;
 import application.User;
 
 
@@ -36,18 +36,20 @@ public class DatabaseHelper {
 			// You can use this command to clear the database and restart from fresh.
 			//statement.execute("DROP ALL OBJECTS");
 
-			createTables();  // Create the necessary tables if they don't exist
-		} catch (ClassNotFoundException e) {
-			System.err.println("JDBC Driver not found: " + e.getMessage());
-		}
+		createTables();  // create tables if they don't exist
+		migrateDatabase();  // add missing columns to existing tables
+	} catch (ClassNotFoundException e) {
+		System.err.println("JDBC Driver not found: " + e.getMessage());
 	}
+}
 
 	private void createTables() throws SQLException {
 		String userTable = "CREATE TABLE IF NOT EXISTS cse360users ("
 				+ "id INT AUTO_INCREMENT PRIMARY KEY, "
 				+ "userName VARCHAR(255) UNIQUE, "
 				+ "password VARCHAR(255), "
-				+ "role VARCHAR(20))";
+				+ "role VARCHAR(20), "
+				+ "reviewerRequestPending BOOLEAN DEFAULT FALSE)";
 		statement.execute(userTable);
 		
 		// Create the invitation codes table
@@ -55,6 +57,18 @@ public class DatabaseHelper {
 	            + "code VARCHAR(10) PRIMARY KEY, "
 	            + "isUsed BOOLEAN DEFAULT FALSE)";
 	    statement.execute(invitationCodesTable);
+	}
+
+	// migration
+	private void migrateDatabase() throws SQLException {
+		try {
+			// add reviewer request pending column if it doesn't exist
+			statement.execute("ALTER TABLE cse360users ADD COLUMN IF NOT EXISTS reviewerRequestPending BOOLEAN DEFAULT FALSE");
+			System.out.println("Database migration: reviewerRequestPending column added/verified");
+		} catch (SQLException e) {
+			// column might already exist
+			System.out.println("Database migration: reviewerRequestPending column already exists");
+		}
 	}
 
 
@@ -126,6 +140,25 @@ public class DatabaseHelper {
 	    return null; // If no user exists or an error occurs
 	}
 	
+	//get user with details
+	public User getUserWithDetails(String userName) throws SQLException {
+		String query = "Select * from cse360users where userName = ?";
+		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+			pstmt.setString(1, userName);
+			ResultSet rs = pstmt.executeQuery();
+			if (rs.next()) {
+				User user = new User(
+					rs.getString("userName"),
+					rs.getString("password"),
+					rs.getString("role")
+				);
+				user.setReviewerRequestPending(rs.getBoolean("reviewerRequestPending"));
+				return user;
+			}
+		}
+		return null;
+	}
+	
 	// Generates a new invitation code and inserts it into the database.
 	public String generateInvitationCode() {
 	    String code = UUID.randomUUID().toString().substring(0, 4); // Generate a random 4-character code
@@ -182,5 +215,47 @@ public class DatabaseHelper {
 			se.printStackTrace(); 
 		} 
 	}
+
+	//set request pending for a user
+	public void setReviewerRequestPending(String userName, boolean isPending) throws SQLException {
+		String query = "UPDATE cse360users SET reviewerRequestPending = ? WHERE userName = ?";
+		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+			pstmt.setBoolean(1, isPending);
+			pstmt.setString(2, userName);
+			pstmt.executeUpdate();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		}
+
+		//change role to reviewer
+	public void changeRoleToReviewer(String userName) throws SQLException {
+		String query = "UPDATE cse360users SET role = 'Reviewer', reviewerRequestPending = FALSE WHERE userName = ?";
+		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+			pstmt.setString(1, userName);
+			pstmt.executeUpdate();
+		} 
+	}
+
+	//get all users with reviewer request pending
+	public List<User> getUsersWithReviewerRequestPending() throws SQLException {
+		java.util.List<User> users = new java.util.ArrayList<>();
+		String query = "SELECT userName, password, role, reviewerRequestPending FROM cse360users WHERE reviewerRequestPending = TRUE";
+		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+			ResultSet rs = pstmt.executeQuery();
+
+			while (rs.next()) {
+				User user = new User(
+					rs.getString("userName"),
+					rs.getString("password"),
+					rs.getString("role")
+				);
+				user.setReviewerRequestPending(rs.getBoolean("reviewerRequestPending"));
+				users.add(user);
+			}}
+			return users;
+		}
+
+
 
 }

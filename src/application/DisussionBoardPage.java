@@ -17,6 +17,7 @@ public class DisussionBoardPage {
     private String currentUserName;
     private String currentUserRole;
     private DiscussionBoardDAO dao;
+    private databasePart1.DatabaseHelper databaseHelper;
 
     //UI components
     private ListView<Question> questionListView;
@@ -28,10 +29,11 @@ public class DisussionBoardPage {
     //currently selected question 
     private Question selectedQuestion;
 
-    public DisussionBoardPage(Stage stage, String currentUserName, String currentUserRole) {
+    public DisussionBoardPage(Stage stage, String currentUserName, String currentUserRole, databasePart1.DatabaseHelper databaseHelper) {
         this.stage = stage;
         this.currentUserName = currentUserName;
         this.currentUserRole = currentUserRole;
+        this.databaseHelper = databaseHelper;
 
         try {
             this.dao = new DiscussionBoardDAO();
@@ -554,11 +556,16 @@ public class DisussionBoardPage {
     //navigate to home page for role
     private void goBack() {
         if(currentUserRole.equals("Admin")) {
-            AdminHomePage adminHomePage = new AdminHomePage(stage,currentUserName);
+            AdminHomePage adminHomePage = new AdminHomePage(stage, currentUserName, databaseHelper);
             stage.setScene(adminHomePage.createScene());
         } else {
-            UserHomePage userHomePage = new UserHomePage(stage,currentUserName);
-            stage.setScene(userHomePage.createScene());
+            try {
+                User currentUser = databaseHelper.getUserWithDetails(currentUserName);
+                UserHomePage userHomePage = new UserHomePage(stage, currentUserName, currentUser, databaseHelper);
+                stage.setScene(userHomePage.createScene());
+            } catch (SQLException e) {
+                showError("Error loading user details: " + e.getMessage());
+            }
         }
     }
     //Show error and info messages

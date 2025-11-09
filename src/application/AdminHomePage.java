@@ -6,7 +6,9 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-
+import databasePart1.DatabaseHelper;
+import databasePart1.DiscussionBoardDAO;
+import java.sql.SQLException;
 /**
  * AdminPage class represents the user interface for the admin user.
  * This page displays a simple welcome message for the admin.
@@ -15,11 +17,12 @@ import javafx.geometry.Pos;
 public class AdminHomePage {
     private Stage stage;
     private String userName;
-    
+    private DatabaseHelper databaseHelper;
     //constructor
-    public AdminHomePage(Stage stage, String userName) {
+    public AdminHomePage(Stage stage, String userName, DatabaseHelper databaseHelper) {
         this.stage = stage;
         this.userName = userName;
+        this.databaseHelper = databaseHelper;
     }
     
     //create the scene
@@ -36,11 +39,28 @@ public class AdminHomePage {
         Button discussionBoardBtn = new Button("Discussion Board");
         discussionBoardBtn.setPrefWidth(200);
         discussionBoardBtn.setOnAction(e -> {
-            DisussionBoardPage dbPage = new DisussionBoardPage(stage, userName, "Admin");
+            DisussionBoardPage dbPage = new DisussionBoardPage(stage, userName, "Admin", databaseHelper);
             stage.setScene(dbPage.createScene());
         });
-        
-        layout.getChildren().addAll(adminLabel, discussionBoardBtn);
+
+        Button reviewerManagementBtn = new Button("Reviewer Management");
+        reviewerManagementBtn.setPrefWidth(200);
+        reviewerManagementBtn.setOnAction(e -> {
+            try{
+                DiscussionBoardDAO dao = new DiscussionBoardDAO();
+                Questions questions = dao.getAllQuestions();
+                Answers answers = dao.getAllAnswers();
+                ReviewerManagamentPage reviewerManagementPage = new ReviewerManagamentPage(stage, userName, databaseHelper, questions, answers);
+                stage.setScene(reviewerManagementPage.createScene());
+            } catch (SQLException ex) {
+                System.err.println("Database error: " + ex.getMessage());
+                ex.printStackTrace();
+            }
+
+        });
+
+
+        layout.getChildren().addAll(adminLabel, discussionBoardBtn, reviewerManagementBtn);
         return new Scene(layout, 800, 400);
     }
     

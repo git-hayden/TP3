@@ -43,16 +43,10 @@ public class UserLoginPage {
             String userName = userNameField.getText();
             String password = passwordField.getText();
             try {
-            	User user=new User(userName, password, "");
-            	WelcomeLoginPage welcomeLoginPage = new WelcomeLoginPage(databaseHelper);
-            	
-            	// Retrieve the user's role from the database using userName
-            	String role = databaseHelper.getUserRole(userName);
-            	
-            	if(role!=null) {
-            		user.setRole(role);
-            		if(databaseHelper.login(user)) {
-            			welcomeLoginPage.show(primaryStage,user);
+            User user = databaseHelper.getUserWithDetails(userName);
+            if(user != null&& password.equals(user.getPassword())) {
+                if(databaseHelper.login(user)) {
+                    new WelcomeLoginPage(databaseHelper).show(primaryStage, user);
             		}
             		else {
             			// Display an error if the login fails
