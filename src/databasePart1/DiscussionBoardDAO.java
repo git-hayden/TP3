@@ -206,7 +206,17 @@ public class DiscussionBoardDAO {
             return answers;
         }
 
-        //get answers sorted by reviewer weight
+        /**
+         * Retrieves answers for a question sorted by weighted score.
+         * Answers are sorted based on a score calculated as:
+         * (1.0 + bonuses) * reviewer_weight
+         * where bonuses include +100 for accepted, +50 for helpful.
+         *
+         * @param questionId the ID of the question to get answers for
+         * @param studentUserName the student viewing the answers (for personalized weights)
+         * @return Answers object containing all answers sorted by weighted score
+         * @throws SQLException if database access error occurs
+         */
         public Answers getWeightedAnswersForQuestion(int questionId, String studentUserName) throws SQLException {
             Answers answers = new Answers();
 
@@ -398,7 +408,16 @@ public class DiscussionBoardDAO {
 
         //REVIEWER WEIGHT CRUD OPERATIONS
 
-        //set or update reviewer weight (upsert operation)
+        /**
+         * Sets or updates the weight assigned by a student to a reviewer.
+         * Uses upsert logic: updates existing weight or inserts new if not present.
+         *
+         * @param studentUserName the student assigning the weight
+         * @param reviewerUserName the reviewer being assigned a weight
+         * @param weight the trust level value (typically 0.1 to 5.0)
+         * @return true if operation was successful
+         * @throws SQLException if database access error occurs
+         */
         public boolean setReviewerWeight(String studentUserName, String reviewerUserName, double weight) throws SQLException {
             //try to update first
             String updateSql = "UPDATE reviewer_weights SET weight = ?, updatedAt = ? WHERE studentUserName = ? AND reviewerUserName = ?";
@@ -423,7 +442,14 @@ public class DiscussionBoardDAO {
             }
         }
 
-        //get reviewer weight for a specific reviewer
+        /**
+         * Retrieves the weight assigned by a student to a specific reviewer.
+         *
+         * @param studentUserName the student who assigned the weight
+         * @param reviewerUserName the reviewer to get the weight for
+         * @return the weight value, or 1.0 if no weight is set (default)
+         * @throws SQLException if database access error occurs
+         */
         public Double getReviewerWeight(String studentUserName, String reviewerUserName) throws SQLException {
             String sql = "SELECT weight FROM reviewer_weights WHERE studentUserName = ? AND reviewerUserName = ?";
             try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
@@ -437,7 +463,14 @@ public class DiscussionBoardDAO {
             return 1.0; //default weight if not set
         }
 
-        //get all reviewer weights for a student
+        /**
+         * Retrieves all reviewer weights assigned by a specific student.
+         * Results are ordered by weight in descending order (highest trust first).
+         *
+         * @param studentUserName the student whose weights to retrieve
+         * @return list of ReviewerWeight objects
+         * @throws SQLException if database access error occurs
+         */
         public List<ReviewerWeight> getAllReviewerWeights(String studentUserName) throws SQLException {
             List<ReviewerWeight> weights = new ArrayList<>();
             String sql = "SELECT * FROM reviewer_weights WHERE studentUserName = ? ORDER BY weight DESC";
@@ -452,7 +485,15 @@ public class DiscussionBoardDAO {
             return weights;
         }
 
-        //delete a reviewer weight
+        /**
+         * Deletes the weight assigned by a student to a reviewer.
+         * After deletion, the reviewer's weight will return to default (1.0).
+         *
+         * @param studentUserName the student who assigned the weight
+         * @param reviewerUserName the reviewer whose weight to delete
+         * @return true if a weight was deleted, false if none existed
+         * @throws SQLException if database access error occurs
+         */
         public boolean deleteReviewerWeight(String studentUserName, String reviewerUserName) throws SQLException {
             String sql = "DELETE FROM reviewer_weights WHERE studentUserName = ? AND reviewerUserName = ?";
             try (PreparedStatement pstmt = connection.prepareStatement(sql)) {

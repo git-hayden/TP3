@@ -908,7 +908,13 @@ public class DiscussionBoardPage {
         }
     }
 
-    // Manage reviewer weights (student only)
+    /**
+     * Opens a dialog for managing reviewer weights.
+     * Allows students to assign trust levels (weights) to reviewers using sliders.
+     * Weights range from 0.1 (low trust) to 5.0 (high trust), with 1.0 as default.
+     * Changes are saved to the database when the user clicks OK.
+     * This feature is only available to students, not admins.
+     */
     private void manageReviewerWeights() {
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("Manage Reviewer Weights");
