@@ -7,6 +7,13 @@ import java.util.List;
 import application.Message;
 import application.Messages;
 
+/*******
+ * <p> Title: MessagesDAO Class. </p>
+ * 
+ * <p> Description: A database to handle message functionality. </p>
+ * 
+ */
+
 //data access object for the message
 public class MessagesDAO {
     private Connection connection;
@@ -38,6 +45,11 @@ public class MessagesDAO {
         }
     }
     //create the tables
+	/**
+	  * This method creates the table to store the messages.
+	  * It also stores the message id, title, content, username of sender/receiver
+	  * and time stamps of when message was created.
+	  */
     private void createTables() throws SQLException {
     	//Clear table comment out if not needed
         //statement.execute("DROP TABLE IF EXISTS messages");
@@ -54,6 +66,12 @@ public class MessagesDAO {
         statement.execute(messageTable);
     }
     //insert a message 
+	/**
+	  * This method creates a message, and inserts the data into the messages table.
+	  * 
+	  * @param message			the content of the message to be sent.
+	  * 
+	  */
     public int createMessage(Message message) throws SQLException {
         String sql = "INSERT INTO messages (title, content, authorUserName, receiverUserName) VALUES (?, ?, ?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -73,6 +91,12 @@ public class MessagesDAO {
             return -1;
         }
         //get all users messages
+    	/**
+    	  * This method displays only the messages from table that match their username.
+	 	  * 
+	 	  * @param userName		userName to display the messages of
+	 	  * 
+	 	  */
         public Messages getUserMessages(String userName) throws SQLException {
             Messages messages = new Messages();
             String sql = "SELECT * FROM messages WHERE receiverUserName = ? ORDER BY createdAt DESC";
@@ -87,7 +111,12 @@ public class MessagesDAO {
             }
             return messages;
         }
-        
+    	/**
+    	  * This method returns the message id.
+    	  * 
+    	  * @param messageId		id of the message to be returned
+   	  	  * 
+   	  	  */
         public Message getMessageById(int messageId) throws SQLException {
             String sql = "SELECT * FROM messages WHERE messageId = ?";
             try (PreparedStatement pstmt = connection.prepareStatement(sql)) {

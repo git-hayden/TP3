@@ -12,6 +12,13 @@ import databasePart1.MessagesDAO;
 
 import java.sql.SQLException;
 
+/*******
+ * <p> Title: MessagingPage Class. </p>
+ * 
+ * <p> Description: A page for private messaging functionality. </p>
+ * 
+ */
+
 public class MessagingPage {
 	private Stage stage;
     private String currentUserName;
@@ -23,7 +30,14 @@ public class MessagingPage {
     
     //currently selected message
     private Message selectedMessage;
-    
+	/**
+	  * This method creates a MessagingPage object.
+	  * 
+	  * @param stage			creation of a new stage for messaging page
+	  * @param currentUserName	the username of the current user
+	  * @param currentUserRole	the role of the current user
+	  * 
+	  */
     public MessagingPage(Stage stage, String currentUserName, String currentUserRole) {
         this.stage = stage;
         this.currentUserName = currentUserName;
@@ -37,6 +51,12 @@ public class MessagingPage {
     }
     
     //create the scene for UI
+	/**
+	  * This method creates the brand new scene, includes left view panel, center message detail,
+	  * and on the right side the buttons.
+	  * 
+	  * @return Creates brand new scene
+	  */
     public Scene createScene() {
         BorderPane mainLayout = new BorderPane();
         mainLayout.setPadding(new Insets(10));
@@ -54,6 +74,11 @@ public class MessagingPage {
     }
     
     //Create left side with message list
+	/**
+	  * Creation of the left side message view panel. Shows the title of message in inbox.
+	  * 
+	  * @return The messages box on the left hand side.
+	  */
     private VBox createMessagesSection() {
         VBox messagesBox = new VBox(10);
         messagesBox.setPadding(new Insets(10));
@@ -87,6 +112,13 @@ public class MessagingPage {
     }
     
     //create center section with message details
+	/**
+	  * This method creates the center view with more detailed message information.
+	  * Includes title, who sent message, time, and message content.
+	  * 
+	  * 
+	  * @return View of the details of single message that is clicked.
+	  */
     private VBox createDetailSection() {
         VBox detailBox = new VBox(10);
         detailBox.setPadding(new Insets(10));
@@ -104,6 +136,12 @@ public class MessagingPage {
         return detailBox;
 }
   //create right section with action buttons
+	/**
+	  * This method creates the buttons on the right hand side of the message page.
+	  * Buttons include Create message, Reply, Refresh, and Back.
+	  * 
+	  * @return Four buttons on the right hand side of page.
+	  */
     private VBox createActionSection() {
         VBox actionBox = new VBox(10);
         actionBox.setPadding(new Insets(10));
@@ -133,6 +171,11 @@ public class MessagingPage {
     }
     
     //create a message
+	/**
+	  * This method gets the information to create the brand new message.
+	  * Then passes the information into createMessage located in MessagesDAO database
+	  * 
+	  */
     private void createMessage() {
       //dialog for creating a message
       Dialog<ButtonType> dialog = new Dialog<>();
@@ -183,6 +226,11 @@ public class MessagingPage {
   }
     
     //load message
+	/**
+	  * This method loads only the messages where the current user is the receiver.
+	  * Loads both the messages list as well as details.
+	  * 
+	  */
     private void loadMessages() {
         try {
             Messages messages = dao.getUserMessages(currentUserName);
@@ -206,6 +254,10 @@ public class MessagingPage {
 
     }
     //add an reply
+    /**
+   	  * This method lets you reply to the currently selected message.
+   	  * 
+   	  */
     private void addReply() {
     	if (selectedMessage == null) {
                 showError("Please select a message to reply to");
@@ -230,12 +282,26 @@ public class MessagingPage {
             });
         }
 	//Show error and info messages
+	/**
+	  * This method shows any errors that happen with invalid inputs.
+	  * 
+	  * @param message		message to be checked for error
+	  * 
+	  * @return The results of the error
+	  */
 	private void showError(String message) {
 		Alert alert = new Alert(Alert.AlertType.ERROR);
 		alert.setTitle("Error");
 		alert.setContentText(message);
 		alert.showAndWait();
 	}
+	/**
+	  * This method shows information of the message
+	  * 
+	  * @param message		message to be checked for info
+	  * 
+	  * @return The results of the information of message
+	  */
 	private void showInfo(String message) {
 		Alert alert = new Alert(Alert.AlertType.INFORMATION);
 		alert.setTitle("Information");
@@ -243,6 +309,10 @@ public class MessagingPage {
 		alert.showAndWait();
 }
     //refresh data
+	/**
+	  * This method refreshes the messages inbox.
+	  * 
+	  */
     private void refreshData() {
         loadMessages();
         if(selectedMessage != null) {
@@ -254,6 +324,10 @@ public class MessagingPage {
     }
 
     //navigate to home page for role
+	/**
+	  * This method exits the inbox and navigates back to the home page.
+	  * 
+	  */
     private void goBack() {
     	if(currentUserRole.equals("Admin")) {
     		AdminHomePage adminHomePage = new AdminHomePage(stage,currentUserName);
