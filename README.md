@@ -1,25 +1,19 @@
 # CSE 360 Team Project Phase 2
 
 ## Overview
-Phase 2 builds on a Discussion Board Q&A system within a JavaFX application. Students can ask questions, provide answers, and interact with replies. The system supports search, filtering, and marking answers as correct to resolve questions. Permissions are role-based: students can only edit/delete their own posts, while admins have full control.
+Phase 3 builds on the Discussion Board Q&A system, adding the new reviewer role, ways for users to apply for this role, and a way for instructors to review these applications with the users past posts.
 
 ## Key Changes
-- **Discussion Board**: Entire discussion board module with database access object.
-- **Student Role**: Added a Student class to mimic user function but allow for expansion of student specific functions
-- **Question and Answer Features**: Students can create questions which will be displayed on the discussion board, other users can respond with answers and feedback.
-- **Replies**: Added ability to add, edit, or delete replies to answers for clarification.
-- **Search and Filter**: Implemented keyword search and filters (e.g answered).
-- **Correct Answer Marking**: Students can mark an answer as correct to resolve questions.
-- **Testing**: Included screencasts with manual tests for various scenarios.
-
+- **Reviewer Role**
+- **Reviewer Application Dashboard**
+- **Ability for users to request the reviewer role**
 ## New User Stories
-- Students can ask questions and receive a curated list of potential answers from sources I trust so I can quickly get back to work.
-- Students can see a list of questions others have asked that might be related to a question I am about to ask.
-- Students can see their own list of unresolved questions and the number of unread potential answers received.
-- Students can see all unresolved questions, and view all answers. Can propose a new potential answer.
-- Students can specify that an answer resolved their question.
-- Student can provide a comment as feedback.
-- Students can read from a list of recently asked questions and provide private feedback to the student who asked the question.
-- Student can produce a new question or answer based on the feedback.
-- Student can search to find specific questions  that have resolved answers.
-- Students can search for both answered and unanswered questions, as well as view reviewer suggestions to curate the best results.
+- Reviewers to create, view, update, and delete reviews of questions and potential answers.
+- Reviewers to scan a list of the reviews they wrote, see, and reply to private messages from the authors of questions or answers they have reviewed.
+- Students to read reviews of potential answers they have found.
+- Students to engage in a private exchange with a reviewer.
+- Students to establish and maintain a list of trusted reviewers and a separate search that only produces reviews from trusted reviewers.
+- Students to add a weightage value to each reviewer that determines the order of multiple reviews that are displayed, so the most likely to be useful is on top.
+- Students to request permission to play the role of a reviewer.
+- Instructors to review the questions and answers a specific student has written to determine whether to grant a student’s request to be a reviewer.
+
