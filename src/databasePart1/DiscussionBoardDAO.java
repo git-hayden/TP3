@@ -8,6 +8,8 @@ import application.Question;
 import application.Answer;
 import application.Questions;
 import application.Answers;
+import application.Message;
+import application.Messages;
 
 //data access object for the discussion board
 public class DiscussionBoardDAO {

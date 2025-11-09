@@ -1,11 +1,9 @@
 package databasePart1;
 import java.sql.*;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.UUID;
 
+import application.Question;
+import application.Questions;
 import application.User;
 
 
@@ -55,6 +53,7 @@ public class DatabaseHelper {
 	            + "code VARCHAR(10) PRIMARY KEY, "
 	            + "isUsed BOOLEAN DEFAULT FALSE)";
 	    statement.execute(invitationCodesTable);
+	    
 	}
 
 
@@ -168,7 +167,7 @@ public class DatabaseHelper {
 	        e.printStackTrace();
 	    }
 	}
-
+	
 	// Closes the database connection and statement.
 	public void closeConnection() {
 		try{ 

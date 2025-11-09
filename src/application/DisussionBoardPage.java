@@ -550,7 +550,7 @@ public class DisussionBoardPage {
                 }catch (SQLException e) {displayQuestionDetail(null);}
             }
         }
-
+    
     //navigate to home page for role
     private void goBack() {
         if(currentUserRole.equals("Admin")) {
@@ -561,6 +561,7 @@ public class DisussionBoardPage {
             stage.setScene(userHomePage.createScene());
         }
     }
+
     //Show error and info messages
     private void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
