@@ -8,6 +8,10 @@ import application.Question;
 import application.Answer;
 import application.Questions;
 import application.Answers;
+import application.Reply;
+import application.Replies;
+import application.Review;
+import application.Reviews;
 
 //data access object for the discussion board
 public class DiscussionBoardDAO {
@@ -65,6 +69,33 @@ public class DiscussionBoardDAO {
     "FOREIGN KEY (questionId) REFERENCES questions(questionId))";
 
     statement.execute(answersTable);
+    
+    //replies table.
+    String repliesTable = "CREATE TABLE IF NOT EXISTS replies(" +
+    "replyId INT AUTO_INCREMENT PRIMARY KEY," +
+    "answerId INT NOT NULL," +
+    "content TEXT NOT NULL," +
+    "authorUserName VARCHAR(255) NOT NULL," +
+    "createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
+    "updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
+    "FOREIGN KEY (answerId) REFERENCES answers(answerId))";
+
+    statement.execute(repliesTable);
+    
+    //reviews table.
+    String reviewsTable = "CREATE TABLE IF NOT EXISTS reviews(" +
+    "reviewId INT AUTO_INCREMENT PRIMARY KEY," +
+    "questionId INT NOT NULL," +
+    "answerId INT NOT NULL," +
+    "rating INT NOT NULL," +
+    "content TEXT NOT NULL," +
+    "authorUserName VARCHAR(255) NOT NULL," +
+    "createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
+    "updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
+    "FOREIGN KEY (questionId) REFERENCES questions(questionId)," +
+    "FOREIGN KEY (answerId) REFERENCES answers(answerId))";
+    
+    statement.execute(reviewsTable);
     }
     //insert a question 
     public int createQuestion(Question question) throws SQLException {
@@ -211,6 +242,190 @@ public class DiscussionBoardDAO {
                 return pstmt.executeUpdate() > 0;
             }
         }
+        //get answer by id
+        public Answer getAnswerById(int answerId) throws SQLException {
+            String sql = "SELECT * FROM answers WHERE answerId = ?";
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                pstmt.setInt(1, answerId);
+                ResultSet rs = pstmt.executeQuery();
+                if (rs.next()) {
+                    return extractAnswerFromResultSet(rs);
+                }
+            }
+            return null;
+        }
+        
+        //REPLY CRUD OPERATIONS
+
+        //insert a reply
+        public int createReply(Reply reply) throws SQLException {
+            String sql = "INSERT INTO replies (answerId, content, authorUserName, createdAt, updatedAt) "
+                    + "VALUES (?, ?, ?, ?, ?)";
+            
+            try (PreparedStatement pstmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                pstmt.setInt(1, reply.getAnswerId());
+                pstmt.setString(2, reply.getContent());
+                pstmt.setString(3, reply.getAuthorUserName()); 
+                pstmt.setTimestamp(4, Timestamp.valueOf(reply.getCreatedAt()));
+                pstmt.setTimestamp(5, Timestamp.valueOf(reply.getUpdatedAt()));
+                
+                pstmt.executeUpdate();
+                
+                // generate replyId
+                ResultSet rs = pstmt.getGeneratedKeys();
+                if (rs.next()) {
+                    int generatedId = rs.getInt(1);
+                    reply.setReplyId(generatedId);
+                    return generatedId;
+                }
+            }
+            return -1;
+        }
+        //get all replies for an answer
+        public Replies getRepliesForAnswer(int answerId) throws SQLException {
+            Replies replies = new Replies();
+            String sql = "SELECT * FROM replies WHERE answerId = ? ORDER BY createdAt ASC";
+            
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                pstmt.setInt(1, answerId);
+                ResultSet rs = pstmt.executeQuery();
+                
+                while (rs.next()) {
+                    Reply r = extractReplyFromResultSet(rs);
+                    replies.addReply(r);
+                }
+            }
+            return replies;
+        }
+        //get all replies
+        public Replies getAllReplies() throws SQLException {
+            Replies replies = new Replies();
+            String sql = "SELECT * FROM replies ORDER BY createdAt DESC";
+            try (PreparedStatement pstmt = connection.prepareStatement(sql);
+                 ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    Reply r = extractReplyFromResultSet(rs);
+                    replies.addReply(r);
+                }
+            }
+            return replies;
+        }
+        //update a reply
+        public boolean updateReply(Reply reply) throws SQLException {
+            String sql = "UPDATE replies SET content = ?, updatedAt = ? WHERE replyId = ?";
+            
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                pstmt.setString(1, reply.getContent());
+                pstmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
+                pstmt.setInt(3, reply.getReplyId());
+                
+                return pstmt.executeUpdate() > 0;
+            }
+        }
+        //delete a reply
+        public boolean deleteReply(int replyId) throws SQLException {
+            String sql = "DELETE FROM replies WHERE replyId = ?";
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                pstmt.setInt(1, replyId);
+                return pstmt.executeUpdate() > 0;
+            }
+        }
+        
+        //REVIEW CRUD OPERATIONS
+        
+        //insert a review
+        public int createReview(Review review) throws SQLException {
+            String sql = "INSERT INTO reviews (questionId, answerId, rating, content, authorUserName, createdAt, updatedAt) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+            
+            try (PreparedStatement pstmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            	pstmt.setInt(1, review.getQuestionId());
+                pstmt.setInt(2, review.getAnswerId());
+                pstmt.setInt(3, review.getRating());
+                pstmt.setString(4, review.getContent());
+                pstmt.setString(5, review.getAuthorUserName()); 
+                pstmt.setTimestamp(6, Timestamp.valueOf(review.getCreatedAt()));
+                pstmt.setTimestamp(7, Timestamp.valueOf(review.getUpdatedAt()));
+                
+                pstmt.executeUpdate();
+                
+                // generate reviewId
+                ResultSet rs = pstmt.getGeneratedKeys();
+                if (rs.next()) {
+                    int generatedId = rs.getInt(1);
+                    review.setReviewId(generatedId);
+                    return generatedId;
+                }
+            }
+            return -1;
+        }
+        //get all reviews for a question
+        public Reviews getReviewsForQuestion(int questionId) throws SQLException {
+            Reviews reviews = new Reviews();
+            String sql = "SELECT * FROM reviews WHERE questionId = ? ORDER BY createdAt ASC";
+            
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                pstmt.setInt(1, questionId);
+                ResultSet rs = pstmt.executeQuery();
+                
+                while (rs.next()) {
+                    Review r = extractReviewFromResultSet(rs);
+                    reviews.addReview(r);
+                }
+            }
+            return reviews;
+        }
+        //get all reviews for an answer
+        public Reviews getReviewsForAnswer(int answerId) throws SQLException {
+            Reviews reviews = new Reviews();
+            String sql = "SELECT * FROM reviews WHERE answerId = ? ORDER BY createdAt ASC";
+            
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                pstmt.setInt(1, answerId);
+                ResultSet rs = pstmt.executeQuery();
+                
+                while (rs.next()) {
+                    Review r = extractReviewFromResultSet(rs);
+                    reviews.addReview(r);
+                }
+            }
+            return reviews;
+        }
+        //get all reviews
+        public Reviews getAllReviews() throws SQLException {
+            Reviews reviews = new Reviews();
+            String sql = "SELECT * FROM reviews ORDER BY createdAt DESC";
+            try (PreparedStatement pstmt = connection.prepareStatement(sql);
+                 ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    Review r = extractReviewFromResultSet(rs);
+                    reviews.addReview(r);
+                }
+            }
+            return reviews;
+        }
+        //update a review
+        public boolean updateReview(Review review) throws SQLException {
+            String sql = "UPDATE reviews SET rating = ?, content = ?, updatedAt = ? WHERE reviewId = ?";
+            
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            	pstmt.setInt(1, review.getRating());
+                pstmt.setString(2, review.getContent());
+                pstmt.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
+                pstmt.setInt(4, review.getReviewId());
+                
+                return pstmt.executeUpdate() > 0;
+            }
+        }
+        //delete a review
+        public boolean deleteReview(int reviewId) throws SQLException {
+            String sql = "DELETE FROM reviews WHERE reviewId = ?";
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                pstmt.setInt(1, reviewId);
+                return pstmt.executeUpdate() > 0;
+            }
+        }
+        
         //helper methods for all operations
         private Question extractQuestionFromResultSet(ResultSet rs) throws SQLException {
             Question q = new Question(
@@ -225,7 +440,7 @@ public class DiscussionBoardDAO {
             q.setCategory(rs.getString("category"));
             return q;
         }
-        //extract an answer from the result set
+        // extract an answer from the result set
         private Answer extractAnswerFromResultSet(ResultSet rs) throws SQLException {
             Answer a = new Answer(
                 rs.getInt("answerId"),
@@ -237,6 +452,32 @@ public class DiscussionBoardDAO {
                 rs.getBoolean("isAccepted")
             );
             return a;
+        }
+        // extract a reply from the result set
+        private Reply extractReplyFromResultSet(ResultSet rs) throws SQLException {
+            Reply r = new Reply(
+                rs.getInt("replyId"),
+                rs.getInt("answerId"),
+                rs.getString("content"),
+                rs.getString("authorUserName"),
+                rs.getTimestamp("createdAt").toLocalDateTime(),
+                rs.getTimestamp("updatedAt").toLocalDateTime()
+            );
+            return r;
+        }
+    	// extract a review from the result set
+        private Review extractReviewFromResultSet(ResultSet rs) throws SQLException {
+            Review r = new Review(
+                rs.getInt("reviewId"),
+                rs.getInt("questionId"),
+                rs.getInt("answerId"),
+                rs.getInt("rating"),
+                rs.getString("content"),
+                rs.getString("authorUserName"),
+                rs.getTimestamp("createdAt").toLocalDateTime(),
+                rs.getTimestamp("updatedAt").toLocalDateTime()
+            );
+            return r;
         }
 
         //finally, close the connection
