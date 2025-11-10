@@ -91,9 +91,7 @@ public class DiscussionBoardDAO {
     "content TEXT NOT NULL," +
     "authorUserName VARCHAR(255) NOT NULL," +
     "createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
-    "updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
-    "FOREIGN KEY (questionId) REFERENCES questions(questionId)," +
-    "FOREIGN KEY (answerId) REFERENCES answers(answerId))";
+    "updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP)";
     
     statement.execute(reviewsTable);
     }
