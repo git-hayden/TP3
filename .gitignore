@@ -1,0 +1,20 @@
+# Compiled class files
+bin/
+bin-test/
+
+# Eclipse metadata
+.metadata/
+.settings/
+
+# Mac OS files
+.DS_Store
+
+# Log files
+*.log
+
+# JavaFX SDK (too large for repo)
+javafx-sdk-*/
+javafx.zip
+
+# Local run scripts
+run.bat
