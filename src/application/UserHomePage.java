@@ -39,7 +39,15 @@ public class UserHomePage {
             stage.setScene(dbPage.createScene());
         });
         
-        layout.getChildren().addAll(userLabel, discussionBoardBtn);
+        //inbox button
+        Button inboxBtn = new Button("Inbox");
+        inboxBtn.setPrefWidth(200);
+        inboxBtn.setOnAction(e -> {
+            MessagingPage messagePage = new MessagingPage(stage, userName, "Admin");
+            stage.setScene(messagePage.createScene());
+        });
+        
+        layout.getChildren().addAll(userLabel, discussionBoardBtn, inboxBtn);
         return new Scene(layout, 800, 400);
     }
 
